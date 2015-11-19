@@ -22,6 +22,8 @@ import java.util.zip.Inflater;
 
 import com.example.tushar.tittle_tattle.adapters.SpinnerAdapter1;
 
+import org.json.JSONObject;
+
 import cz.msebera.android.httpclient.NameValuePair;
 import cz.msebera.android.httpclient.message.BasicNameValuePair;
 
@@ -62,12 +64,14 @@ public class MainActivityFragment extends Fragment implements AdapterView.OnItem
 
 
         mPhoneNumber=(EditText)abc.findViewById(R.id.PhoneEditText);
+
         mSubmitButton=(Button)abc.findViewById(R.id.submit_button);
         mSubmitButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 try {
-                    genrateHttpLoginrequest();
+                    final String phoneNumber=mPhoneNumber.getText().toString();
+                    genrateHttpLoginrequest(phoneNumber);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -124,7 +128,7 @@ public class MainActivityFragment extends Fragment implements AdapterView.OnItem
     }
 
     private void verifyOtpRequest() throws Exception {
-        String url="http://192.168.43.187:8080/login/verify";
+        String url="http://192.168.1.5:8080/login/verify";
        // Inflater a=new Inflater();
       //  View OtpView=a.inflate(R.layout.otp_input_dailog,)
         EditText enterOtpBox=(EditText)getActivity().findViewById(R.id.otp_enter_box);
@@ -142,17 +146,15 @@ public class MainActivityFragment extends Fragment implements AdapterView.OnItem
 
     }
 
-    private void genrateHttpLoginrequest() throws Exception {
-        setIsLoginRequest(true);
-        String url="http://192.168.43.187:8080/login";
-        //JSONObject obj = new JSONObject();
-        //obj.put("mobileNo", "9889311967");
-        ArrayList<NameValuePair> header=new ArrayList<NameValuePair>();
+    private void genrateHttpLoginrequest(String phoneNumber) throws Exception {
+        String url="http://192.168.1.5:8080/login";
+        JSONObject jsonObject=new JSONObject();
+        jsonObject.put("mobileNo",phoneNumber);
+        String json=jsonObject.toString();
         ArrayList<NameValuePair> nameValuePair = new ArrayList<NameValuePair>();
-        nameValuePair.add(new BasicNameValuePair("mobileNo", "9889311987"));
-        ArrayList<NameValuePair> arrayList= new ArrayList<NameValuePair>();
+        nameValuePair.add(new BasicNameValuePair("mobileNo", phoneNumber));
         rst=new RestClient();
-        rst.ExecuteLoginRequst(url, header, nameValuePair);
+        rst.ExecuteLoginRequst(url,jsonObject);
     }
 
     private void sendSms() {

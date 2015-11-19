@@ -7,6 +7,7 @@ import android.support.annotation.Nullable;
 import android.webkit.URLUtil;
 import android.widget.EditText;
 
+import com.google.gson.Gson;
 import com.loopj.android.http.*;
 
 import org.json.JSONObject;
@@ -28,6 +29,7 @@ import cz.msebera.android.httpclient.client.HttpClient;
 import cz.msebera.android.httpclient.client.entity.UrlEncodedFormEntity;
 import cz.msebera.android.httpclient.client.methods.HttpPost;
 import cz.msebera.android.httpclient.client.methods.HttpUriRequest;
+import cz.msebera.android.httpclient.entity.ContentType;
 import cz.msebera.android.httpclient.entity.StringEntity;
 import cz.msebera.android.httpclient.impl.client.DefaultHttpClient;
 import cz.msebera.android.httpclient.message.BasicHeader;
@@ -46,8 +48,8 @@ public class RestClient {
         POST
     }
 
-    private String mUUID=null;
-    private String mOtp=null;
+    private String mUUID = null;
+    private String mOtp = null;
     public int responseCode = 0;
     public String message;
     public String response;
@@ -74,7 +76,7 @@ public class RestClient {
                     for (NameValuePair h : headers)
                         request.addHeader(h.getName(), h.getValue());
                 }
-                executeRequest(request, url,0);
+                executeRequest(request, url, 0);
                 break;
             }
             case POST: {
@@ -86,24 +88,20 @@ public class RestClient {
                         request.addHeader(h.getName(), h.getValue());
                 }
                 if (params != null)
-                    request.setEntity(new StringEntity("{\"mobileNo\":\"9956930192\"}", "UTF-8"));
-                executeRequest(request, url,0);
+                    request.setEntity(new StringEntity("{\"mobileNo\":\"9956930196\"}", "UTF-8"));
+                executeRequest(request, url, 0);
                 break;
             }
         }
     }
 
-    public void ExecuteLoginRequst(String url, ArrayList<NameValuePair> headers, ArrayList<NameValuePair> params) throws Exception {
-
-                HttpPost request = new HttpPost(url);
-                // add headers
-               /* if (headers != null) {
-                    headers = addCommonHeaderField(headers);
-                    for (NameValuePair h : headers)
-                        request.addHeader(h.getName(), h.getValue());
-                }*/
-
-        boolean a=URLUtil.isValidUrl(url);
+    public void ExecuteLoginRequst(String url, JSONObject jsonObject) throws Exception {
+        HttpPost request = new HttpPost(url);
+        // add headers
+        request.addHeader("Content-type", "application/json");
+        request.addHeader("cache-control", "no-cache");
+        //String json = new Gson().toJson(params);
+        /*boolean a=URLUtil.isValidUrl(url);
         JSONObject j=new JSONObject();
         j.put("mobileNo", "9987387342");
 
@@ -120,27 +118,30 @@ public class RestClient {
 
                // if (params != null)
                     //request.setEntity(new StringEntity("{\"mobileNo\":\"9956767777\"}", "UTF-8"));
-                //request.s();
-                    request.setEntity(new StringEntity("{\"mobileNo\":\"9956767777\"}", "UTF-8"));
-                    executeRequest(request, url, 0);
+                //request.s();*/
+        //      request.setEntity(new StringEntity("{\"mobileNo\":\"9956930196\"}", ContentType.APPLICATION_JSON));
+        String gsonString = jsonObject.toString();
+        StringEntity input = new StringEntity(gsonString);
+        input.setContentType("application/json");
+        request.setEntity(input);
+        executeRequest(request, url, 0);
 
 
     }
 
-    public void verifyOtpRequest(String url,String otp) {
+    public void verifyOtpRequest(String url, String otp) {
 
-        String uid=getmUUID();
-            HttpPost request = new HttpPost(url);
-            // add headers
+        String uid = getmUUID();
+        HttpPost request = new HttpPost(url);
+        // add headers
 
-              ArrayList<NameValuePair>  headers = new ArrayList<NameValuePair>();
-                    headers=addCommonHeaderField(headers);
-                for (NameValuePair h : headers)
-                    request.addHeader(h.getName(), h.getValue());
+        ArrayList<NameValuePair> headers = new ArrayList<NameValuePair>();
+        headers = addCommonHeaderField(headers);
+        for (NameValuePair h : headers)
+            request.addHeader(h.getName(), h.getValue());
 
-                request.setEntity(new StringEntity("{\"uuid\":\""+getmUUID()+"\",\"otp\": \""+otp+"\"}", "UTF-8"));
-            executeRequest(request, url, 0);
-
+        request.setEntity(new StringEntity("{\"uuid\":\"" + getmUUID() + "\",\"otp\": \"" + otp + "\"}", "UTF-8"));
+        executeOtpVerificationRequest(request, url, 0);
 
 
     }
@@ -150,7 +151,7 @@ public class RestClient {
         return _header;
     }
 
-    private void executeRequest(HttpUriRequest request, String url,int type) {
+    private void executeRequest(HttpUriRequest request, String url, int type) {
         HttpClient client = new DefaultHttpClient();
         HttpResponse httpResponse;
         try {
@@ -162,9 +163,9 @@ public class RestClient {
             if (entity != null) {
                 InputStream instream = entity.getContent();
                 response = convertStreamToString(instream);
-                JSONObject OtpString=new JSONObject(response);
-                if(type==0){
-                    mUUID=OtpString.getString("uuid");
+                JSONObject OtpString = new JSONObject(response);
+                if (type == 0) {
+                    mUUID = OtpString.getString("uuid");
                     //mOtp=OtpString.getInt("otp");
                 }
                 instream.close();
@@ -194,5 +195,38 @@ public class RestClient {
 
     public String getmUUID() {
         return mUUID;
+    }
+
+
+    private boolean executeOtpVerificationRequest(HttpUriRequest request, String url, int type) {
+        HttpClient client = new DefaultHttpClient();
+        HttpResponse httpResponse;
+        try {
+            httpResponse = client.execute(request);
+            responseCode = httpResponse.getStatusLine().getStatusCode();
+            message = httpResponse.getStatusLine().getReasonPhrase();
+            HttpEntity entity = httpResponse.getEntity();
+
+            if (entity != null) {
+                InputStream instream = entity.getContent();
+                response = convertStreamToString(instream);
+                JSONObject OtpString = new JSONObject(response);
+                if (type == 0) {
+                    mUUID = OtpString.getString("uuid");
+                    //mOtp=OtpString.getInt("otp");
+                }
+                if (message.equalsIgnoreCase("Created")) {
+                    if (OtpString.getString("status").equalsIgnoreCase("VARIFIED")) {
+                        instream.close();
+                        return true;
+                    } else
+                        return false;
+                }
+                instream.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }
